@@ -36,7 +36,7 @@ def calculate_bollinger(df):
 
 
 def place_order(order_type, side, amount, price=None):
-    params = {'positionSide': 'LONG' if side == 'buy' else 'SHORT'}
+    params = {}
     if order_type == 'limit':
         order = exchange.create_limit_order(symbol, side, amount, price, params=params)
     else:
