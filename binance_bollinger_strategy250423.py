@@ -1,12 +1,14 @@
 import ccxt
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import pandas as pd
 import ta
 
+print("=== 전략 실행 시작 ===", flush = True)
+
 exchange = ccxt.binance({
-    'apiKey': '',
-    'secret': '',
+    'apiKey': '7PvGMgxoinB7ZeYKDMEU7f7iWwHaHcc61E06ROMBk5I90BLk3ROuqzng4rGJHR8Z',
+    'secret': '3LieF9GR6gUr73VWhtgIUqZv3itxmkbmRFraXuEANLcUxsju5NlQFgqMEnGyTtoP',
     'enableRateLimit': True,
     'options': {'defaultType': 'future'}
 })
@@ -24,8 +26,6 @@ entry_high = None
 def fetch_data():
     ohlcv = exchange.fetch_ohlcv(symbol, timeframe, limit=100)
     df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
-    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-    return df
 
 
 def calculate_bollinger(df):
@@ -36,6 +36,7 @@ def calculate_bollinger(df):
 
 
 def place_order(order_type, side, amount, price=None):
+    params = {}
     if order_type == 'limit':
         order = exchange.create_limit_order(symbol, side, amount, price, params=params)
     else:
@@ -51,15 +52,13 @@ def confirm_order_filled(order_id):
         time.sleep(2)
     return False
 
-
 def get_balance():
     balance = exchange.fetch_balance({'type': 'future'})
     return balance['total']['USDT']
 
-
 def calculate_amount(price):
     usdt_balance = get_balance()
-    return round((usdt_balance * leverage) / price, 3)
+    return round((usdt_balance * leverage * 0.99) / price, 3)
 
 
 def wait_until_next_candle():
@@ -71,6 +70,7 @@ def wait_until_next_candle():
     sleep_time = (next_candle_time - now).total_seconds()
     print(f"[{now.strftime('%Y-%m-%d %H:%M:%S')}] 다음 4시간봉까지 {int(sleep_time // 60)}분 대기 중...")
     time.sleep(sleep_time)
+
 
 def get_open_position():
     markets = exchange.load_markets()
@@ -87,9 +87,11 @@ def get_open_position():
     return None, None, None, None
 
 
-
-# 시작 시 기존 포지션 확인
+# 시작 시 기존 포지션 확인 및 레버리지 설정
+exchange.set_leverage(leverage, symbol)
 position, entry_price, entry_low, entry_high = get_open_position()
+
+
 
 # 메인 루프
 while True:
