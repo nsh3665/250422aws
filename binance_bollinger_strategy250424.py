@@ -66,7 +66,7 @@ def wait_until_next_candle():
     next_hour = (now.hour // 4 + 1) * 4
     next_candle_time = now.replace(hour=next_hour % 24, minute=0, second=5, microsecond=0)
     if next_hour >= 24:
-        next_candle_time += datetime.timedelta(days=1)
+        next_candle_time += timedelta(days=1)
     sleep_time = (next_candle_time - now).total_seconds()
     print(f"[{now.strftime('%Y-%m-%d %H:%M:%S')}] 다음 4시간봉까지 {int(sleep_time // 60)}분 대기 중...")
     time.sleep(sleep_time)
